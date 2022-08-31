@@ -1,5 +1,5 @@
 # Rustbase Install
-A simple Rust project to install Rustbase and tools.
+A simple script to install Rustbase and tools.
 
 ## Installation
 ```bash
