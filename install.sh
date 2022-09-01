@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+# Based on https://bun.sh/install
 
 if [[ ${OS:-} = Windows_NT ]]; then
-    echo 'Please install bun using Windows Subsystem for Linux'
+    echo 'Please install Rustbase using Windows Subsystem for Linux'
     exit 1
 fi
 
