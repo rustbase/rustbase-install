@@ -6,12 +6,55 @@ if [[ ${OS:-} = Windows_NT ]]; then
     exit 1
 fi
 
-if [ "$EUID" -ne 0 ]
-    then echo "You can run as a root to better experience"
-    echo "Waiting for 10 seconds..."
-    sleep 10
-    exit
+# if [ "$EUID" -ne 0 ]
+#     then echo "You can run as a root to better experience"
+#     echo "Waiting for 10 seconds..."
+#     sleep 10
+#     exit
+# fi
+
+# Reset
+Color_Off=''
+
+# Regular Colors
+Red=''
+Green=''
+Dim='' # White
+
+# Bold
+Bold_White=''
+Bold_Green=''
+
+if [[ -t 1 ]]; then
+    # Reset
+    Color_Off='\033[0m' # Text Reset
+
+    # Regular Colors
+    Red='\033[0;31m'   # Red
+    Green='\033[0;32m' # Green
+    Dim='\033[0;2m'    # White
+
+    # Bold
+    Bold_Green='\033[1;32m' # Bold Green
+    Bold_White='\033[1m'    # Bold White
 fi
+
+error() {
+    echo -e "${Red}error${Color_Off}:" "$@" >&2
+    exit 1
+}
+
+info() {
+    echo -e "${Dim}$@ ${Color_Off}"
+}
+
+info_bold() {
+    echo -e "${Bold_White}$@ ${Color_Off}"
+}
+
+success() {
+    echo -e "${Green}$@ ${Color_Off}"
+}
 
 echo "Installing Rustbase..."
 
@@ -28,8 +71,8 @@ esac
 rustbase_repo=https://github.com/rustbase/rustbase
 rustbase_cli_repo=https://github.com/rustbase/rustbase-cli
 
-rustbase_download=$rustbase_repo/releases/latest/download/rustbase-linux-x64.zip
-rustbase_cli_download=$rustbase_cli_repo/releases/latest/download/rustbase-cli-linux-x64.zip
+rustbase_download=$rustbase_repo/releases/latest/download/rustbase-$target.zip
+rustbase_cli_download=$rustbase_cli_repo/releases/latest/download/rustbase-cli-$target.zip
 
 rustbase_bin=$HOME/rustbase/bin
 
@@ -44,7 +87,7 @@ fi
 
 # Rustbase Server
 
-curl --fail --location --progress-bar --output "rustbase-server.zip" "$rustbase_download" ||
+curl --fail --location -s --output "rustbase-server.zip" "$rustbase_download" ||
     echo "Failed to download Rustbase from \"$rustbase_download\""
 
 unzip -oqjd "$rustbase_bin" "rustbase-server.zip" ||
@@ -61,7 +104,7 @@ rm -r "rustbase-server.zip" ||
 
 # Rustbase CLI
 
-curl --fail --location --progress-bar --output "rustbase-cli.zip" "$rustbase_cli_download" ||
+curl --fail --location -s --output "rustbase-cli.zip" "$rustbase_cli_download" ||
     echo "Failed to download Rustbase from \"$rustbase_cli_download\""
 
 unzip -oqjd "$rustbase_bin" "rustbase-cli.zip" ||
@@ -76,9 +119,9 @@ chmod +x "$rustbase_cli_exe" ||
 rm -r "rustbase-cli.zip" ||
     echo 'Failed to remove downloaded Rustbase archive'
 
-echo "Rustbase installed!"
+success "Rustbase installed!"
 
-echo "Adding Rustbase to PATH..."
+info "Adding Rustbase to PATH..."
 
 case $(basename "$SHELL") in
 'fish')
@@ -96,7 +139,7 @@ case $(basename "$SHELL") in
         done
     } >>"$fish_config"
 
-    echo "Rustbase added to PATH!"
+    info "Rustbase added to PATH!"
     ;;
 
 'zsh')
@@ -105,7 +148,7 @@ case $(basename "$SHELL") in
         echo -e '\n# rustbase'
         echo "export PATH=\"$rustbase_bin:\$PATH\""
     } >>"$zsh_config"
-    echo "Rustbase added to PATH!"
+    info "Rustbase added to PATH!"
     ;;
 
 *)
@@ -114,25 +157,22 @@ case $(basename "$SHELL") in
     ;;
 esac
 
-if [[ $EUID -eq 0 ]]; then
-    
-    {
-        echo "
-        [Unit]
-        Description=Rustbase Database Server
-        After=network.target
+{
 
-        [Service]
-        Type=simple
-        ExecStart=$rustbase_server_exe
+echo "
+[Unit]
+Description=Rustbase Database Server
+After=network.target
 
-        [Install]
-        WantedBy=multi-user.target"
-    } > "/lib/systemd/system/rustbase.service"
+[Service]
+Type=simple
+ExecStart=$rustbase_server_exe
 
-    systemctl enable rustbase.service
-    systemctl start rustbase.service
-fi
+[Install]
+WantedBy=multi-user.target" > "/lib/systemd/system/rustbase.service"
+} > /dev/null 2>&1
 
 
-echo "Run 'rustbase' to get started"
+sudo systemctl enable rustbase.service && systemctl start rustbase.service
+
+success "Run 'rustbase' to get started"
