@@ -6,13 +6,6 @@ if [[ ${OS:-} = Windows_NT ]]; then
     exit 1
 fi
 
-# if [ "$EUID" -ne 0 ]
-#     then echo "You can run as a root to better experience"
-#     echo "Waiting for 10 seconds..."
-#     sleep 10
-#     exit
-# fi
-
 # Reset
 Color_Off=''
 
@@ -87,7 +80,13 @@ fi
 
 # Rustbase Server
 
-curl --fail --location -s --output "rustbase-server.zip" "$rustbase_download" ||
+if ! command -v unzip &> /dev/null
+then
+    echo "unzip could not be found"
+    exit
+fi
+
+curl --fail --location -sS --output "rustbase-server.zip" "$rustbase_download" ||
     echo "Failed to download Rustbase from \"$rustbase_download\""
 
 unzip -oqjd "$rustbase_bin" "rustbase-server.zip" ||
@@ -132,7 +131,7 @@ case $(basename "$SHELL") in
 
     fish_config=$HOME/.config/fish/config.fish
     {
-        echo -e '\n# rustbase'
+        echo -e '\n# Rustbase Database Server'
 
         for command in "${commands[@]}"; do
             echo "$command"
@@ -145,9 +144,18 @@ case $(basename "$SHELL") in
 'zsh')
     zsh_config=$HOME/.zshrc
     {
-        echo -e '\n# rustbase'
+        echo -e '\n# Rustbase Database Server'
         echo "export PATH=\"$rustbase_bin:\$PATH\""
     } >>"$zsh_config"
+    info "Rustbase added to PATH!"
+    ;;
+
+'bash')
+    bash_config=$HOME/.bashrc
+    {
+        echo -e '\n# Rustbase Database Server'
+        echo "export PATH=\"$rustbase_bin:\$PATH\""
+    } >>"$bash_config"
     info "Rustbase added to PATH!"
     ;;
 
@@ -157,9 +165,7 @@ case $(basename "$SHELL") in
     ;;
 esac
 
-{
-
-echo "
+service_file="
 [Unit]
 Description=Rustbase Database Server
 After=network.target
@@ -169,9 +175,9 @@ Type=simple
 ExecStart=$rustbase_server_exe
 
 [Install]
-WantedBy=multi-user.target" > "/lib/systemd/system/rustbase.service"
-} > /dev/null 2>&1
+WantedBy=multi-user.target"
 
+echo "$service_file" | sudo tee -a /etc/systemd/system/rustbase.service > /dev/null
 
 sudo systemctl enable rustbase.service && systemctl start rustbase.service
 
