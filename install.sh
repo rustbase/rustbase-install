@@ -71,6 +71,8 @@ success() {
     echo -e "${Green}$@ ${Color_Off}"
 }
 
+tmpdir=$(mktemp -d)
+
 echo "Installing Rustbase..."
 
 case $(uname -ms) in
@@ -102,10 +104,10 @@ if ! command -v unzip &>/dev/null; then
     exit
 fi
 
-curl --fail --location -sS --output "rustbase-server.zip" "$rustbase_download" ||
+curl --fail --location -sS --output "$tmpdir/rustbase-server.zip" "$rustbase_download" ||
     echo "Failed to download Rustbase from \"$rustbase_download\""
 
-unzip -oqjd "$rustbase_bin" "rustbase-server.zip" ||
+unzip -oqjd "$rustbase_bin" "$tmpdir/rustbase-server.zip" ||
     echo 'Failed to extract Rustbase'
 
 mv "$rustbase_bin/rustbase" "$rustbase_server_exe" ||
@@ -114,12 +116,15 @@ mv "$rustbase_bin/rustbase" "$rustbase_server_exe" ||
 chmod +x "$rustbase_server_exe" ||
     echo 'Failed to set permissions on Rustbase executable'
 
-rm -r "rustbase-server.zip" ||
+rm -r "$tmpdir/rustbase-server.zip" ||
     echo 'Failed to remove downloaded Rustbase archive'
 
 if [[ $no_cli -eq 0 ]]; then
     rustbase_cli_script="https://raw.githubusercontent.com/rustbase/rustbase-install/main/install-cli.sh"
-    curl -s "$rustbase_cli_script" | bash || echo "Failed to install Rustbase CLI" && exit 1
+    curl --location -sS --output "$tmpdir/install-cli.sh" "$rustbase_cli_script"
+    chmod +x "$tmpdir/install-cli.sh"
+    "$tmpdir/install-cli.sh"
+    rm -r "$tmpdir/install-cli.sh"
 fi
 
 if [[ $no_service -eq 0 ]]; then
@@ -147,5 +152,7 @@ WantedBy=multi-user.target"
     info_bold "sudo systemctl enable rustbase"
     echo ""
 fi
+
+rm -r "$tmpdir" || exit 1
 
 success "Rustbase installed successfully"

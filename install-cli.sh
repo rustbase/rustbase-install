@@ -124,4 +124,7 @@ if [[ $no_path -eq 0 ]]; then
     esac
 fi
 
+rm -r "$tmpdir" ||
+    echo 'Failed to remove temporary directory'
+
 echo "[Rustbase CLI] Installation complete!"
