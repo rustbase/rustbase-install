@@ -6,6 +6,28 @@ if [[ ${OS:-} = Windows_NT ]]; then
     exit 1
 fi
 
+invalid_option() {
+    echo "Invalid option: $1" >&2
+    exit 1
+}
+
+no_cli=0
+no_service=0
+
+while (($#)); do
+    [[ $1 = -- ]] && {
+        shift
+        break
+    }
+    [[ $1 = -?* ]] || break
+    case $1 in
+    --no-cli) no_cli=1 ;;
+    --no-service) no_service=1 ;;
+    -*) invalid_option "$1" ;;
+    esac
+    shift
+done
+
 # Reset
 Color_Off=''
 
@@ -56,32 +78,26 @@ case $(uname -ms) in
     target=linux-x64
     ;;
 
+'Linux i686')
+    target=linux-x86
+    ;;
+
 *)
     error 'Unsupported platform'
     ;;
 esac
 
-rustbase_repo=https://github.com/rustbase/rustbase
-rustbase_cli_repo=https://github.com/rustbase/rustbase-cli
-
-rustbase_download=$rustbase_repo/releases/latest/download/rustbase-$target.zip
-rustbase_cli_download=$rustbase_cli_repo/releases/latest/download/rustbase-cli-$target.zip
-
-rustbase_bin=$HOME/rustbase/bin
-
-rustbase_cli_exe=$rustbase_bin/rustbase
-rustbase_server_exe=$rustbase_bin/rustbase_server
-
+rustbase_repo="https://github.com/rustbase/rustbase"
+rustbase_download="$rustbase_repo/releases/latest/download/rustbase-$target.zip"
+rustbase_bin="$HOME/rustbase/bin"
+rustbase_server_exe="$rustbase_bin/rustbase_server"
 
 if [[ ! -d $rustbase_bin ]]; then
     mkdir -p "$rustbase_bin" ||
         error "Failed to create install directory \"$rustbase_bin\""
 fi
 
-# Rustbase Server
-
-if ! command -v unzip &> /dev/null
-then
+if ! command -v unzip &>/dev/null; then
     echo "unzip could not be found"
     exit
 fi
@@ -101,71 +117,18 @@ chmod +x "$rustbase_server_exe" ||
 rm -r "rustbase-server.zip" ||
     echo 'Failed to remove downloaded Rustbase archive'
 
-# Rustbase CLI
+if [[ $no_cli -eq 0 ]]; then
+    rustbase_cli_script="https://raw.githubusercontent.com/rustbase/rustbase-install/main/install-cli.sh"
+    curl -s "$rustbase_cli_script" | bash || echo "Failed to install Rustbase CLI" && exit 1
+fi
 
-curl --fail --location -s --output "rustbase-cli.zip" "$rustbase_cli_download" ||
-    echo "Failed to download Rustbase from \"$rustbase_cli_download\""
+if [[ $no_service -eq 0 ]]; then
+    if ! command -v systemctl &>/dev/null; then
+        echo "systemctl could not be found"
+        exit
+    fi
 
-unzip -oqjd "$rustbase_bin" "rustbase-cli.zip" ||
-    echo 'Failed to extract Rustbase'
-
-mv "$rustbase_bin/rustbase-cli" "$rustbase_cli_exe" ||
-    echo 'Failed to move extracted Rustbase to destination'
-
-chmod +x "$rustbase_cli_exe" ||
-    echo 'Failed to set permissions on Rustbase executable'
-
-rm -r "rustbase-cli.zip" ||
-    echo 'Failed to remove downloaded Rustbase archive'
-
-success "Rustbase installed!"
-
-info "Adding Rustbase to PATH..."
-
-case $(basename "$SHELL") in
-'fish')
-
-    commands=(
-        "set --export PATH $rustbase_bin\$PATH"
-    )
-
-    fish_config=$HOME/.config/fish/config.fish
-    {
-        echo -e '\n# Rustbase Database Server'
-
-        for command in "${commands[@]}"; do
-            echo "$command"
-        done
-    } >>"$fish_config"
-
-    info "Rustbase added to PATH!"
-    ;;
-
-'zsh')
-    zsh_config=$HOME/.zshrc
-    {
-        echo -e '\n# Rustbase Database Server'
-        echo "export PATH=\"$rustbase_bin:\$PATH\""
-    } >>"$zsh_config"
-    info "Rustbase added to PATH!"
-    ;;
-
-'bash')
-    bash_config=$HOME/.bashrc
-    {
-        echo -e '\n# Rustbase Database Server'
-        echo "export PATH=\"$rustbase_bin:\$PATH\""
-    } >>"$bash_config"
-    info "Rustbase added to PATH!"
-    ;;
-
-*)
-    echo 'Manually add the directory to ~/.bashrc (or similar):'
-    echo "export PATH=\"$rustbase_bin:\$PATH\""
-    ;;
-esac
-
-service_file="
+    service_file="
 [Unit]
 Description=Rustbase Database Server
 After=network.target
@@ -177,8 +140,12 @@ ExecStart=$rustbase_server_exe
 [Install]
 WantedBy=multi-user.target"
 
-echo "$service_file" | sudo tee -a /etc/systemd/system/rustbase.service > /dev/null
+    echo "$service_file" | sudo tee -a /etc/systemd/system/rustbase.service >/dev/null
 
-sudo systemctl enable rustbase.service && systemctl start rustbase.service
+    echo ""
+    info "Enable Rustbase Database Server service using:"
+    info_bold "sudo systemctl enable rustbase"
+    echo ""
+fi
 
-success "Run 'rustbase' to get started"
+success "Rustbase installed successfully"
