@@ -94,6 +94,12 @@ rustbase_download="$rustbase_repo/releases/latest/download/rustbase-$target.zip"
 rustbase_bin="$HOME/rustbase/bin"
 rustbase_server_exe="$rustbase_bin/rustbase_server"
 
+# Check if has RUSTBASE_INSTALL_PATH env var and set rustbase_bin to it
+if [[ -n $RUSTBASE_INSTALL_PATH ]]; then
+    rustbase_bin="$RUSTBASE_INSTALL_PATH"
+    rustbase_server_exe="$rustbase_bin/rustbase_server"
+fi
+
 if [[ ! -d $rustbase_bin ]]; then
     mkdir -p "$rustbase_bin" ||
         error "Failed to create install directory \"$rustbase_bin\""

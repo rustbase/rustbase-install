@@ -40,11 +40,17 @@ case $(uname -ms) in
     ;;
 esac
 
-rustbase_bin=$HOME/rustbase/bin
+rustbase_bin="$HOME/rustbase/bin"
 
-rustbase_cli_repo=https://github.com/rustbase/rustbase-cli
-rustbase_cli_download=$rustbase_cli_repo/releases/latest/download/rustbase-cli-$target.zip
-rustbase_cli_exe=$rustbase_bin/rustbase
+rustbase_cli_repo="https://github.com/rustbase/rustbase-cli"
+rustbase_cli_download="$rustbase_cli_repo/releases/latest/download/rustbase-cli-$target.zip"
+rustbase_cli_exe="$rustbase_bin/rustbase"
+
+# Check if has RUSTBASE_INSTALL_PATH env var and set rustbase_bin to it
+if [[ -n $RUSTBASE_INSTALL_PATH ]]; then
+    rustbase_bin="$RUSTBASE_INSTALL_PATH"
+    rustbase_cli_exe="$rustbase_bin/rustbase"
+fi
 
 tmpdir=$(mktemp -d)
 
