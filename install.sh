@@ -133,14 +133,6 @@ chmod +x "$rustbase_server_exe" ||
 rm -r "$tmpdir/rustbase-server.zip" ||
     echo 'Failed to remove downloaded Rustbase archive'
 
-if [[ $no_cli -eq 0 ]]; then
-    rustbase_cli_script="https://raw.githubusercontent.com/rustbase/rustbase-install/main/install-cli.sh"
-    curl --location -sS --output "$tmpdir/install-cli.sh" "$rustbase_cli_script"
-    chmod +x "$tmpdir/install-cli.sh"
-    "$tmpdir/install-cli.sh"
-    rm -r "$tmpdir/install-cli.sh"
-fi
-
 if [[ $no_service -eq 0 ]]; then
     service_file_path="/etc/systemd/system/rustbase.service"
 
@@ -166,6 +158,15 @@ WantedBy=multi-user.target"
     echo ""
     info "Enable Rustbase Database Server service using:"
     info_bold "    sudo systemctl enable rustbase"
+    echo ""
+fi
+
+if [[ $no_cli -eq 0 ]]; then
+    rustbase_cli_script="https://raw.githubusercontent.com/rustbase/rustbase-install/main/install-cli.sh"
+    curl --location -sS --output "$tmpdir/install-cli.sh" "$rustbase_cli_script"
+    chmod +x "$tmpdir/install-cli.sh"
+    "$tmpdir/install-cli.sh"
+    rm -r "$tmpdir/install-cli.sh"
 fi
 
 exit_success

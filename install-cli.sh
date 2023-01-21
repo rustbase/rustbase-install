@@ -64,7 +64,7 @@ if ! command -v unzip &>/dev/null; then
     exit
 fi
 
-echo "[Rustbase CLI] Downloading $target binaries..."
+echo "Installing Rustbase CLI for $target..."
 
 curl --fail --location -s --output "$tmpdir/rustbase-cli.zip" "$rustbase_cli_download" ||
     echo "Failed to download Rustbase from \"$rustbase_cli_download\""
@@ -82,7 +82,7 @@ rm -r "$tmpdir/rustbase-cli.zip" ||
     echo 'Failed to remove downloaded Rustbase archive'
 
 if [[ $no_path -eq 0 ]]; then
-    echo "[Rustbase CLI] Adding $rustbase_bin to PATH..."
+    echo "Adding $rustbase_bin to PATH..."
 
     case $(basename "$SHELL") in
     'fish')
@@ -100,7 +100,7 @@ if [[ $no_path -eq 0 ]]; then
             done
         } >>"$fish_config"
 
-        echo "[Rustbase CLI] CLI added to PATH!"
+        echo "CLI added to PATH!"
         ;;
 
     'zsh')
@@ -110,7 +110,7 @@ if [[ $no_path -eq 0 ]]; then
             echo "export PATH=\"$rustbase_bin:\$PATH\""
         } >>"$zsh_config"
 
-        echo "[Rustbase CLI] CLI added to PATH!"
+        echo "CLI added to PATH!"
         ;;
 
     'bash')
@@ -120,7 +120,7 @@ if [[ $no_path -eq 0 ]]; then
             echo "export PATH=\"$rustbase_bin:\$PATH\""
         } >>"$bash_config"
 
-        echo "[Rustbase CLI] CLI added to PATH!"
+        echo "CLI added to PATH!"
         ;;
 
     *)
@@ -133,4 +133,4 @@ fi
 rm -r "$tmpdir" ||
     echo 'Failed to remove temporary directory'
 
-echo "[Rustbase CLI] Installation complete!"
+echo "Rustbase CLI Installation complete!"
