@@ -71,6 +71,14 @@ success() {
     echo -e "${Green}$@ ${Color_Off}"
 }
 
+exit_success() {
+    rm -r "$tmpdir" || exit 1
+    echo ""
+    success "Rustbase installed successfully"
+
+    exit 0
+}
+
 tmpdir=$(mktemp -d)
 
 echo "Installing Rustbase..."
@@ -134,9 +142,11 @@ if [[ $no_cli -eq 0 ]]; then
 fi
 
 if [[ $no_service -eq 0 ]]; then
-    if ! command -v systemctl &>/dev/null; then
-        echo "systemctl could not be found"
-        exit
+    service_file_path="/etc/systemd/system/rustbase.service"
+
+    if [[ -f $service_file_path ]]; then
+        info_bold "Rustbase Database Server service already exists"
+        exit_success
     fi
 
     service_file="
@@ -151,14 +161,11 @@ ExecStart=$rustbase_server_exe
 [Install]
 WantedBy=multi-user.target"
 
-    echo "$service_file" | sudo tee -a /etc/systemd/system/rustbase.service >/dev/null
+    echo "$service_file" | sudo tee -a $service_file_path >/dev/null
 
     echo ""
     info "Enable Rustbase Database Server service using:"
-    info_bold "sudo systemctl enable rustbase"
-    echo ""
+    info_bold "    sudo systemctl enable rustbase"
 fi
 
-rm -r "$tmpdir" || exit 1
-
-success "Rustbase installed successfully"
+exit_success
